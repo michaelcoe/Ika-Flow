@@ -6,7 +6,6 @@ Created on Thu Oct 29 15:36:49 2020
 """
 import numpy as np
 
-#https://en.wikipedia.org/wiki/NACA_airfoil#Equation_for_a_cambered_4-digit_NACA_airfoil
 def camber_line( x, m, p, c ):
     """
     Computes the y-coordinate of the camber line.
@@ -68,48 +67,52 @@ def thickness( x, t, c, a):
         maximum thickness as a fraction of chord.
     c: float
         chord length.
-    a: float
-        last coefficient of the airfoil.
+    a: boolean
+        Determines if trialing edge of airfoil is closed or open.
         (0.1015) for a non-zero trailing edge thickness and (0.1036) for
         closed trailing edge.
-    
+        
     Returns
     -------
     yt: 1D numpy array of floats
         y-coordinates or thickness of airfoil for with no modification.
     """
+    if a:
+        a4_coeff = 0.1036 # closed trailing edge
+    else:
+        a4_coeff = 0.1015 # open trailing edge
+    
     a0 =  0.2969 * (np.sqrt(x/c))
     a1 = -0.1260 * (x/c)
     a2 = -0.3516 * np.power(x/c,2)
     a3 =  0.2843 * np.power(x/c,3)
-    a4 = -a * np.power(x/c,4)
+    a4 = -a4_coeff * np.power(x/c,4)
     
     return 5 * t * c * (a0 + a1 + a2 + a3 + a4)
 
-def naca4(x, m, p, t, c, a4):
+def naca4(x, t, c, m=0.0, p=0.30, a4=True):
     """
     Computes the x and y coordinates of a naca4 airfoil.
     
     Input Parameters
     ----------
     x: 1D array of floats
-        x-coordinate of the points defining the geometry.
-    m: float
-        maximum camber.
-    p: float
-        location of maximum camber.
+        x-coordinate of the points defining the geometry.    
     t: float
-        maximum thickness as a fraction of chord.
+        maximum thickness as a fraction of chord.    
     c: float
         chord length.
-    a4: float
-        last coefficient of the airfoil.
-        (0.1015) for a non-zero trailing edge thickness and (0.1036) for
-        closed trailing edge.
+    m: float (default 0.0)
+        maximum camber.
+    p: float (default = 0.3)
+        location of maximum camber.
+    a4: boolean
+        Determines if trailing edge of airfoil is closed or not (default = True).
+        True = closed trailing edge, False is open trailing edge.
     
     Returns
     -------
-    X, Y: 2D numpy array of floats.
+    X, Y: 1D numpy array of floats.
         x and y-coordinates for upper and bottom part of airfoil.
     """
     dyc_dx = dyc_over_dx(x, m, p, c)
@@ -118,12 +121,21 @@ def naca4(x, m, p, t, c, a4):
     yc = camber_line(x, m, p, c)
     
     # calculate the upper and lower x and y values respectively
-    X = np.asarray([x-yt*np.sin(th), x + yt*np.sin(th)])
-    Y = np.asarray([yc + yt*np.cos(th), yc - yt*np.cos(th)])
+    xu = x-yt*np.sin(th)
+    yu = yc + yt*np.cos(th)
+    xl = x + yt*np.sin(th)
+    yl = yc - yt*np.cos(th)
+    
+    # format the output to be inline with a typical .dat file
+    x_reverse = np.flipud(xu)
+    y_reverse = np.flipud(yu)
+    # build array with the first and last coordinate taken out
+    X = np.append(x_reverse, xl[1:-1])
+    Y = np.append(y_reverse, yl[1:-1])
     
     return X, Y
     
-def naca4_modified(x, m, t, c, d0):
+def naca4_modified(x, t, c, m, d0):
     """
     Computes the x and y coordinates of a modified naca4 airfoil.
     
@@ -132,7 +144,7 @@ def naca4_modified(x, m, t, c, d0):
     x: 1D array of floats
         x-coordinate of the points defining the geometry.
     m: float
-        maximum camber.
+        location of maximum thickness.
     t: float
         maximum thickness as a fraction of chord.
     c: float
@@ -142,7 +154,7 @@ def naca4_modified(x, m, t, c, d0):
     
     Returns
     -------
-    X, Y: 2D numpy array of floats.
+    X, Y: 1D numpy array of floats.
         x and y-coordinates for upper and bottom part of airfoil.
     """
     a, d = naca4Coefficients(m, t, c, d0) # solve for a and d coefficients
@@ -152,10 +164,17 @@ def naca4_modified(x, m, t, c, d0):
     # calculate the thickness
     yLead = a[0]*np.sqrt(xLead/c) + a[1]*(xLead/c) + a[2]*np.power(xLead/c, 2) + a[3]*np.power(xLead/c, 3)
     yTrail = d[0] + d[1]*(1-(xTrail/c)) + d[2]*np.power(1-(xTrail/c), 2) + d[3]*np.power(1-(xTrail/c), 3)
-    X = np.append(xLead, xTrail)
-    Y = np.append(yLead, yTrail)
+    x = np.append(xLead, xTrail)
+    y = np.append(yLead, yTrail)
     
-    return np.asarray([X, X]), np.asarray([Y, -Y])
+    # format the output to be inline with a typical .dat file
+    x_reverse = np.flipud(x)
+    y_reverse = np.flipud(y)
+    # build array with last coordinate taken out
+    X = np.append(x_reverse, x[1::])
+    Y = np.append(y_reverse, -y[1::])
+    
+    return X, Y
 
 def naca4Coefficients(m, t, c, d0):
     """
