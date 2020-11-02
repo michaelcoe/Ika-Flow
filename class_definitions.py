@@ -74,3 +74,31 @@ class Panel:
         self.vt = 0.0  # tangential velocity
         self.cp = 0.0  # pressure coefficient
         
+    def update_position(self, x, y):
+        """
+        Allows for the update of the x and y position of the panel
+        
+        Sets the end-points and calculates the center-point, length,
+        and angle (with the x-axis) of the panel.
+        
+        Input Parameters
+        ---------
+        x: 1D numpy array of x-coordinates.
+            New x-coordinates of the panel.
+        y: 1D numpy array of y-coordinates.
+            New y-coordinates of the panel.
+        """
+        # define the new values to work with
+        xa_new, xb_new = self.xa + x[0], self.xb + x[1]
+        ya_new, yb_new = self.ya + y[0], self.yb + y[1]
+        self.xa, self.ya = xa_new, ya_new
+        self.xb, self.yb = xb_new, yb_new
+        
+        self.xc, self.yc = (xa_new + xb_new) / 2, (ya_new + yb_new) / 2  # panel center
+        self.length = np.sqrt((xb_new - xa_new)**2 + (yb_new - ya_new)**2)  # panel length
+        
+        # orientation of panel (angle between x-axis and panel's normal)
+        if xb_new - xa_new <= 0.0:
+            self.beta = np.arccos((yb_new - ya_new) / self.length)
+        elif xb_new - xa_new > 0.0:
+            self.beta = np.pi + np.arccos(-(yb_new - ya_new) / self.length)

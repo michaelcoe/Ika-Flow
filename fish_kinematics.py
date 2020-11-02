@@ -77,5 +77,32 @@ class Carangiform:
         
         return np.append(h_leading, h_trailing)
         
-    
+    def single_rigid_motion(self, x, t):       
+        """
+        Computes the midline curvature as a function of time 
+        for a single value
+        
+        Input Parameters
+        ----------
+        x: 1D numpy array of panel x-coordinates.
+            x-coordinates of midline.
+        t: float.
+            the timestep in seconds.
+        
+        Returns
+        -------
+        h(x,t): 1d numpy array.
+            h-coordinates of the midline.
+        """
+        if x[-1] <= self.x_pivot:
+            return (-self.c0/self.x_pivot*np.sin(self.w*t)*x + 
+                     self.c0*np.sin(self.w*t))
+        elif x[0] <= self.x_pivot and x[-1] > self.x_pivot:
+            return np.append(-self.c0/self.x_pivot*np.sin(self.w*t)*x[0] + 
+                     self.c0*np.sin(self.w*t), (self.c0 + self.c1*x[-1] + 
+                     self.c2*x[-1]**2) * np.sin(self.w*t-self.k*x[-1]))
+        else:
+            return ((self.c0 + self.c1*x + self.c2*x**2) *
+                      np.sin(self.w*t-self.k*x))
+        
     
