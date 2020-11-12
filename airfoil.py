@@ -130,8 +130,8 @@ def naca4(x, t, c, m=0.0, p=0.30, a4=True):
     x_reverse = np.flipud(xu)
     y_reverse = np.flipud(yu)
     # build array with the first and last coordinate taken out
-    X = np.append(x_reverse, xl[1:-1])
-    Y = np.append(y_reverse, yl[1:-1])
+    X = np.append(x_reverse, xl[1::])
+    Y = np.append(y_reverse, yl[1::])
     
     return X, Y
     

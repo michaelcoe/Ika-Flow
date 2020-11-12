@@ -1,68 +1,30 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Oct 29 15:36:49 2020
+Created on Thu Nov  5 15:16:41 2020
 
-@author: MC
+@author: mco143
 """
 
-import numpy as np
-import class_definitions as cd
-
-from scipy import integrate
-
-def define_panels(x, y, N=40):
+class Solver:
     """
-    Discretizes the geometry into panels using 'cosine' method.
-    
-    Input Parameters
-    ----------
-    x: 1D array of floats
-        x-coordinate of the points defining the geometry.
-    y: 1D array of floats
-        y-coordinate of the points defining the geometry.
-    N: integer, optional
-        Number of panels;
-        default: 40.
-    
-    Returns
-    -------
-    panels: 1D numpy array of Panel objects.
-        The list of panels.
+    Defines a solver object to run simulations with.
     """
-    
-    R = (x.max() - x.min()) / 2.0  # circle radius
-    x_center = (x.max() + x.min()) / 2.0  # x-coordinate of circle center
-    
-    theta = np.linspace(0.0, 2.0 * np.pi, N + 1)  # array of angles
-    x_circle = x_center + R * np.cos(theta)  # x-coordinates of circle
-    
-    x_ends = np.copy(x_circle)  # x-coordinate of panels end-points
-    y_ends = np.empty_like(x_ends)  # y-coordinate of panels end-points
-    
-    # extend coordinates to consider closed surface
-    x, y = np.append(x, x[0]), np.append(y, y[0])
-    
-    # compute y-coordinate of end-points by projection
-    I = 0
-    for i in range(N):
-        while I < len(x) - 1:
-            if (x[I] <= x_ends[i] <= x[I + 1]) or (x[I + 1] <= x_ends[i] <= x[I]):
-                break
-            else:
-                I += 1
-        a = (y[I + 1] - y[I]) / (x[I + 1] - x[I])
-        b = y[I + 1] - a * x[I + 1]
-        y_ends[i] = a * x_ends[i] + b
-    y_ends[N] = y_ends[0]
-    
-    # create panels
-    panels = np.empty(N, dtype=object)
-    for i in range(N):
-        panels[i] = cd.Panel(x_ends[i], y_ends[i], x_ends[i + 1], y_ends[i + 1])
-    
-    return panels
-    
-def integral(x, y, panel, dxdk, dydk):
+    def __init__(self, panels, freestream):
+        """
+        Initializes a wake panel.
+            
+        Input Parameters
+        ---------
+        panels: 1D numpy array of panels.
+            These contain all the panel info.
+        freestream: freestream object.
+            contains all the freestream information.
+        """
+        
+        self.panels = panels
+        self.freestream = freestream
+        
+    def integral(self, x, y, panel, dxdk, dydk):
     """
     Evaluates the contribution from a panel at a given point.
     
@@ -83,14 +45,15 @@ def integral(x, y, panel, dxdk, dydk):
     -------
     Contribution from the panel at a given point (x, y).
     """
-    def integrand(s):
-        return (((x - (panel.xa - np.sin(panel.beta) * s)) * dxdk +
-                 (y - (panel.ya + np.cos(panel.beta) * s)) * dydk) /
-                ((x - (panel.xa - np.sin(panel.beta) * s))**2 +
-                 (y - (panel.ya + np.cos(panel.beta) * s))**2) )
-    return integrate.quad(integrand, 0.0, panel.length)[0]
+        def integrand(s):
+            return (((x - (panel.xa - np.sin(panel.beta) * s)) * dxdk +
+                     (y - (panel.ya + np.cos(panel.beta) * s)) * dydk) /
+                    ((x - (panel.xa - np.sin(panel.beta) * s))**2 +
+                     (y - (panel.ya + np.cos(panel.beta) * s))**2) )
+        
+        return integrate.quad(integrand, 0.0, panel.length)[0]
 
-def source_contribution_normal(panels):
+    def source_contribution_normal(self, panels):
     """
     Builds the source contribution matrix for the normal velocity.
     
@@ -117,7 +80,7 @@ def source_contribution_normal(panels):
                                                     np.sin(panel_i.beta))
     return A
 
-def vortex_contribution_normal(panels):
+def vortex_contribution_normal(self, panels):
     """
     Builds the vortex contribution matrix for the normal velocity.
     
@@ -145,7 +108,7 @@ def vortex_contribution_normal(panels):
     
     return A
 
-def kutta_condition(A_source, B_vortex):
+def kutta_condition(self, A_source, B_vortex):
     """
     Builds the Kutta condition array.
     
@@ -173,7 +136,7 @@ def kutta_condition(A_source, B_vortex):
     
     return b
 
-def build_singularity_matrix(A_source, B_vortex):
+def build_singularity_matrix(self, A_source, B_vortex):
     """
     Builds the left-hand side matrix of the system
     arising from source and vortex contributions.
@@ -200,7 +163,7 @@ def build_singularity_matrix(A_source, B_vortex):
     
     return A
 
-def build_freestream_rhs(panels, freestream):
+def build_freestream_rhs(self, panels, freestream):
     """
     Builds the right-hand side of the system 
     arising from the freestream contribution.
@@ -227,7 +190,7 @@ def build_freestream_rhs(panels, freestream):
     
     return b
 
-def compute_tangential_velocity(panels, freestream, gamma, A_source, B_vortex):
+def compute_tangential_velocity(self, panels, freestream, gamma, A_source, B_vortex):
     """
     Computes the tangential surface velocity.
     
@@ -264,7 +227,7 @@ def compute_tangential_velocity(panels, freestream, gamma, A_source, B_vortex):
     for i, panel in enumerate(panels):
         panel.vt = tangential_velocities[i]
         
-def compute_pressure_coefficient(panels, freestream):
+def compute_pressure_coefficient(self, panels, freestream):
     """
     Computes the surface pressure coefficients.
     

@@ -106,7 +106,7 @@ class Panel:
         elif xb_new - xa_new > 0.0:
             self.beta = np.pi + np.arccos(-(yb_new - ya_new) / self.length)
             
-class Wake_pane:
+class Wake_panel:
     """
     Contains information related to the wake.
     """
@@ -156,8 +156,8 @@ class Wake_pane:
             New y-coordinates of the panel.
         """
         # define the new values to work with
-        xa_new, xb_new = self.xa + x[0], self.xb + x[1]
-        ya_new, yb_new = self.ya + y[0], self.yb + y[1]
+        xa_new, xb_new = x[0], x[1]
+        ya_new, yb_new = y[0], y[1]
         self.xa, self.ya = xa_new, ya_new
         self.xb, self.yb = xb_new, yb_new
         
@@ -171,3 +171,4 @@ class Wake_pane:
             self.beta = np.arccos((yb_new - ya_new) / self.length)
         elif xb_new - xa_new > 0.0:
             self.beta = np.pi + np.arccos(-(yb_new - ya_new) / self.length)
+    
