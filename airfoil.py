@@ -90,7 +90,7 @@ def thickness( x, t, c, a):
     
     return 5 * t * c * (a0 + a1 + a2 + a3 + a4)
 
-def naca4(x, t, c, m=0.0, p=0.30, a4=True):
+def naca4(x, t, m, p, a4, c):
     """
     Computes the x and y coordinates of a naca4 airfoil.
     
@@ -125,17 +125,10 @@ def naca4(x, t, c, m=0.0, p=0.30, a4=True):
     yu = yc + yt*np.cos(th)
     xl = x + yt*np.sin(th)
     yl = yc - yt*np.cos(th)
+       
+    return np.asarray([xu, xl]), np.asarray([yu, yl])
     
-    # format the output to be inline with a typical .dat file
-    x_reverse = np.flipud(xu)
-    y_reverse = np.flipud(yu)
-    # build array with the first and last coordinate taken out
-    X = np.append(x_reverse, xl[1::])
-    Y = np.append(y_reverse, yl[1::])
-    
-    return X, Y
-    
-def naca4_modified(x, t, c, m, d0):
+def naca4_modified(x, t, m, d0, c):
     """
     Computes the x and y coordinates of a modified naca4 airfoil.
     
@@ -155,28 +148,23 @@ def naca4_modified(x, t, c, m, d0):
     Returns
     -------
     X, Y: 1D numpy array of floats.
-        x and y-coordinates for upper and bottom part of airfoil.
+        x and y-coordinates for upper and bottom part of airfoil. The format supports
+        the contour functions.
     """
-    a, d = naca4Coefficients(m, t, c, d0) # solve for a and d coefficients
+    a, d = naca4Coefficients(t, m, d0, c) # solve for a and d coefficients
 
     xLead = x[x<=m] # x values for leading edge
     xTrail = x[x>m] # x values for trialing edge
     # calculate the thickness
     yLead = a[0]*np.sqrt(xLead/c) + a[1]*(xLead/c) + a[2]*np.power(xLead/c, 2) + a[3]*np.power(xLead/c, 3)
     yTrail = d[0] + d[1]*(1-(xTrail/c)) + d[2]*np.power(1-(xTrail/c), 2) + d[3]*np.power(1-(xTrail/c), 3)
-    x = np.append(xLead, xTrail)
-    y = np.append(yLead, yTrail)
     
-    # format the output to be inline with a typical .dat file
-    x_reverse = np.flipud(x)
-    y_reverse = np.flipud(y)
-    # build array with last coordinate taken out
-    X = np.append(x_reverse, x[1::])
-    Y = np.append(y_reverse, -y[1::])
+    X = np.append(xLead, xTrail)
+    Y = np.append(yLead, yTrail)
     
-    return X, Y
+    return np.asarray([X, X]), np.asarray([Y, -Y])
 
-def naca4Coefficients(m, t, c, d0):
+def naca4Coefficients(t, m, d0, c):
     """
     Computes the x and y coordinates of a modified naca4 airfoil.
     
@@ -215,3 +203,34 @@ def naca4Coefficients(m, t, c, d0):
     [a1, a2, a3] = np.linalg.solve(aA, aB)
 
     return np.array([a0, a1, a2, a3]), np.array([d0, d1, d2, d3])
+
+def convert_to_coordinates(X, Y):
+    """
+    Computes the x and y coordinates of a modified naca4 airfoil.
+    
+    Input Parameters
+    ----------
+    x: 2D numpy array.
+        X-coordinates of airfoil.
+    y: 2D numpy array.
+        Y-coordinates of airfoil.
+    
+    Returns
+    -------
+    X, Y: 1D array of floats.
+        X and Y are in the format of coordinates for a .dat file.  
+        X starts at 1, goes to 0, and then back to one. Y is the corresponding y-coordinates.
+    """
+    xu = X[0]
+    xl = X[1]
+    yu = Y[0]
+    yl = Y[1]
+
+    # format the output to be inline with a typical .dat file
+    x_reverse = np.flipud(xu)
+    y_reverse = np.flipud(yu)
+    # build array with last coordinate taken out
+    X = np.append(x_reverse, xl)
+    Y = np.append(y_reverse, yl)
+        
+    return X, Y
