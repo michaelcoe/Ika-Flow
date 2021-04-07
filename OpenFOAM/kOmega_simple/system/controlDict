@@ -1,0 +1,129 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  5                                     |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     simpleFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         10000;
+
+deltaT          1;
+
+writeControl    runTime;
+
+writeInterval   100;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  10;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+functions
+{
+    forcesTop
+    {
+        type                forces;
+        libs                ("libforces.so");
+        writeControl        timeStep;
+        writeInterval       1;
+        patches             (ribletTop);
+        
+		rho                 rhoInf;
+		rhoInf				998.2;
+        
+		log                 true;
+        CofR                (0.25 0 0);
+		
+		binData
+		{
+			nBin        50;
+			direction   (1 0 0);
+			cumulative  no;
+		}
+    }
+	
+	forcesBottom
+	{
+	    type                forces;
+        libs                ("libforces.so");
+        writeControl        timeStep;
+        writeInterval       1;
+        patches             (ribletBottom);
+        
+		rho                 rhoInf;
+		rhoInf				998.2;
+        
+		log                 true;
+        CofR                (0.25 0 0);
+	
+		binData
+		{
+			nBin        50;
+			direction   (1 0 0);
+			cumulative  no;
+		}
+	}
+	
+	forceCoeffs1
+	{
+	    type			forceCoeffs;
+        libs 			("libforces.so");
+        writeControl   	timeStep;
+        writeInterval  	1;
+		writeFields 	yes;
+        patches         (ribletTop ribletBottom);
+        
+		rho             rhoInf;
+        rhoInf          998.2;
+        
+		porosity		no;
+		
+		liftDir         ( 0 1 0 );
+        dragDir         ( 1 0 0 );
+        CofR            ( 0.25 0 0 );
+        pitchAxis       ( 0 0 1 );
+        magUInf         1.0;
+        lRef            1.0;
+        Aref            0.20457725;
+	}
+	
+	yplus1
+	{
+		type                yPlus;
+    	libs            ("libfieldFunctionObjects.so");
+
+		enabled true;
+
+		writeControl 	outputTime;
+		writeInterval	1;
+	}
+}
+
+// ************************************************************************* //

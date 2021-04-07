@@ -1,0 +1,101 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  5                                     |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+	{
+        solver           PCG;
+		preconditioner	 DIC;
+        tolerance        1e-6;
+        relTol           0.01;
+		minIter		 	3;
+	}
+
+    U
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-8;
+        relTol          0.001;
+		minIter			2;
+    }
+
+    "(k|omega|kl|kt)"
+    {
+        solver          PBiCGStab;
+        preconditioner  DILU;
+        tolerance       1e-8;
+        relTol          0.001;
+		minIter			2;
+    }
+	
+    Phi
+    {
+        solver          GAMG;
+        smoother        DIC;
+
+        tolerance       1e-06;
+        relTol          0.01;
+    }
+}
+
+potentialFlow
+{
+	nNonOrthogonalCorrectors 10;
+	PhiRefCell 0; 
+    PhiRefValue 0;
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 3;
+    
+	pRefCell        0;
+    pRefValue       0;
+
+	consistent	on;
+	
+    residualControl
+    {
+        p               1e-5;
+        Ux              1e-5;
+        Uy              1e-5;
+        nuTilda         1e-5;
+		k				1e-5;
+		omega			1e-5;
+    }
+}
+
+relaxationFactors
+{
+    fields
+    {
+        p               0.9;
+    }
+    equations
+    {
+		p				0.9;
+        "(U|k|omega)"   0.7;
+    }
+}
+
+cache
+{
+    grad(U);
+}
+
+// ************************************************************************* //

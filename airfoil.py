@@ -230,7 +230,7 @@ def convert_to_coordinates(X, Y):
     x_reverse = np.flipud(xu)
     y_reverse = np.flipud(yu)
     # build array with last coordinate taken out
-    X = np.append(x_reverse, xl)
-    Y = np.append(y_reverse, yl)
+    X = np.append(x_reverse, xl[1::])
+    Y = np.append(y_reverse, yl[1::])
         
     return X, Y
