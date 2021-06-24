@@ -1,3 +1,0 @@
-fishWavePointPatchVectorField.C
-
-LIB = $(FOAM_USER_LIBBIN)/fishMotion

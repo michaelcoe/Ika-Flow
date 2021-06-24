@@ -1,3 +1,0 @@
-SOURCE = \
-pimpleMeshCoFoam.C \
-version_of_build.rc
