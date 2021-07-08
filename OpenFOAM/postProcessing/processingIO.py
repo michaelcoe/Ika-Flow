@@ -123,9 +123,11 @@ def write_excel_files(save_location, files, sheet_names, object_type, startTime=
         for i, path in enumerate(files):
             sheet = sheet_names[i]
             
-            [time, total_x, total_y, total_z, pressure_x, pressure_y, pressure_z, viscous_x, viscous_y, viscous_z] = process_force_file(path, startTime, endTime)
+            [time, total_x, total_y, total_z, pressure_x, pressure_y, pressure_z, viscous_x, viscous_y, viscous_z] = process_force_file(path, 
+            startTime, endTime)
             
-            data_template = {'Time':time, 'total_x':total_x, 'total_y':total_y, 'total_z':total_z, 'pressure_x':pressure_x, 'pressure_y':pressure_y, 'pressure_z':pressure_z, 'viscous_x':viscous_x, 'viscous_y':viscous_y, 'viscous_z':viscous_z}
+            data_template = {'Time':time, 'total_x':total_x, 'total_y':total_y, 'total_z':total_z, 'pressure_x':pressure_x, 
+            'pressure_y':pressure_y, 'pressure_z':pressure_z, 'viscous_x':viscous_x, 'viscous_y':viscous_y, 'viscous_z':viscous_z}
             
             mesh_df = pd.DataFrame(data_template)
             mesh_df.to_excel(writer, sheet_name=sheet, index=False)
@@ -137,7 +139,8 @@ def write_excel_files(save_location, files, sheet_names, object_type, startTime=
             
             [time, Cd, Cs, Cl, CmRoll, CmPitch, CmYaw, Cdf, Cdr, Csf, Csr, Clf, Clr] = process_forceCoeff_file(path, startTime, endTime)
             
-            data_template = {'Time':time, 'Cd':Cd, 'Cs':Cs, 'Cl':Cl, 'CmRoll':CmRoll, 'CmPitch':CmPitch, 'CmYaw':CmYaw, 'Cd(f)':Cdf, 'Cd(r)':Cdr, 'Cs(f)':Csf, 'Cs(r)':Csr, 'Cl(f)':Clf, 'Cl(r)':Clr}
+            data_template = {'Time':time, 'Cd':Cd, 'Cs':Cs, 'Cl':Cl, 'CmRoll':CmRoll, 'CmPitch':CmPitch, 'CmYaw':CmYaw, 
+            'Cd(f)':Cdf, 'Cd(r)':Cdr, 'Cs(f)':Csf, 'Cs(r)':Csr, 'Cl(f)':Clf, 'Cl(r)':Clr}
             
             mesh_df = pd.DataFrame(data_template)
             mesh_df.to_excel(writer, sheet_name=sheet, index=False)
@@ -147,9 +150,12 @@ def write_excel_files(save_location, files, sheet_names, object_type, startTime=
         for i, path in enumerate(files):
             sheet = sheet_names[i]
             
-            [time, Ux_initial, Ux_final, Uy_initial, Uy_final, k_initial, k_final, p_initial, p_final, omega_initial, omega_final] = process_solverInfo_file(path, startTime, endTime)
+            [time, Ux_initial, Ux_final, Uy_initial, Uy_final, k_initial, k_final, p_initial, p_final, omega_initial, 
+            omega_final] = process_solverInfo_file(path, startTime, endTime)
             
-            data_template = {'Time':time, 'Ux_initial':Ux_initial, 'Ux_final':Ux_final, 'Uy_initial':Uy_initial, 'Uy_final':Uy_final, 'k_inital':k_initial, 'k_final':k_final, 'p_initial':p_initial, 'p_final':p_final, 'omega_intial':omega_initial, 'omega_final':omega_final}
+            data_template = {'Time':time, 'Ux_initial':Ux_initial, 'Ux_final':Ux_final, 'Uy_initial':Uy_initial, 'Uy_final':Uy_final, 
+            'k_initial':k_initial, 'k_final':k_final, 'p_initial':p_initial, 'p_final':p_final, 'omega_initial':omega_initial, 
+            'omega_final':omega_final}
             
             mesh_df = pd.DataFrame(data_template)
             mesh_df.to_excel(writer, sheet_name=sheet, index=False)
@@ -185,21 +191,24 @@ def write_csv_files(save_location, files, file_names, object_type, startTime=0.0
         for i, path in enumerate(files):
             csv_save_location = Path(save_path).joinpath(file_names[i] + '-' + object_type + '.csv')
             raw = process_force_file(path, startTime, endTime)
-            np.savetxt(csv_save_location, raw, delimiter=',', header='time, total_x, total_y, total_z, pressure_x, pressure_y, pressure_z, viscous_x, viscous_y, viscous_z')
+            np.savetxt(csv_save_location, raw, delimiter=',', 
+            header='time, total_x, total_y, total_z, pressure_x, pressure_y, pressure_z, viscous_x, viscous_y, viscous_z')
 
     # Save Force Coefficient Data
     elif object_type == 'forceCoeff':
         for i, path in enumerate(files):
             csv_save_location = Path(save_path).joinpath(file_names[i] + '-' + object_type + '.csv')
             raw = process_forceCoeff_file(path, startTime, endTime)
-            np.savetxt(csv_save_location, raw, delimiter=',', header='time, Cd, Cs, Cl, CmRoll, CmPitch, CmYaw, Cdf, Cdr, Csf, Csr, Clf, Clr')
+            np.savetxt(csv_save_location, raw, delimiter=',', 
+            header='time, Cd, Cs, Cl, CmRoll, CmPitch, CmYaw, Cdf, Cdr, Csf, Csr, Clf, Clr')
 
     # Save Solver Info Data
     elif object_type == 'solverInfo':
         for i, path in enumerate(files):
             csv_save_location = Path(save_path).joinpath(file_names[i] + '-' + object_type + '.csv')
             raw = process_solverInfo_file(path, startTime, endTime)
-            np.savetxt(csv_save_location, raw, delimiter=',', header='time, Ux_initial, Ux_final, Uy_initial, Uy_final, k_initial, k_final, p_initial, p_final, omega_initial, omega_final')
+            np.savetxt(csv_save_location, raw, delimiter=',', 
+            header='time, Ux_initial, Ux_final, Uy_initial, Uy_final, k_initial, k_final, p_initial, p_final, omega_initial, omega_final')
 
     # Save yPlus Data
     elif object_type == 'yPlus':
