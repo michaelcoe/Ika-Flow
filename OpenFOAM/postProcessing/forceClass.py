@@ -1,146 +1,84 @@
-import os.path as path
 import numpy as np
-from glob import glob as glob
-from PostProcessingIO import isNumber, fftAnalysis, filterData, toCoefficient
-from collections import defaultdict
 
-# TODO
-# - write docstrings!
-# - implement FFT
+from pathlib import Path
+from dataUtilities import filterData
 
 class Forces:
 
-    _TIME = 0
-    _TOTAL_X = 1
-    _TOTAL_Y = 2
-    _TOTAL_Z = 3
-    _PRESSURE_X = 4
-    _PRESSURE_Y = 5
-    _PRESSURE_Z = 6
-    _VISCOUS_X = 7
-    _VISCOUS_Y = 8
-    _VISCOUS_Z = 9
-
     def __init__(self,
                  inputpath,
-                 normalTime = 1,
-                 normalForce = 1,
-                 normalMoment = 1,
-                 filterForces = True,
+                 cycles = 2.0,
+                 total_cycles = 3.0,
                  average = True,
-                 FFT = False,
-                 verbose = True):
+                 filterForces = True):
 
-        self._inputpath = inputpath
-        self._verbose = verbose
-        self.normalTime = normalTime
-        self.normalForce = normalForce
-        self.normalMoment = normalMoment
+        self.force_path = Path(inputpath).parent.joinpath('force.dat')
+        self.moment_path = Path(inputpath).parent.joinpath('moment.dat')
+        self.specific_case = self.force_path.parts[-6]
+        self.parent_case = self.force_path.parts[-7]
+        self.cycles = cycles
+        self.total_cycles = total_cycles
 
-        # parse the input path and check if file or directory
-        if path.exists(inputpath):
-            # if inputpath is a file, try to open the file and read it
-            if path.isfile(inputpath):
-                raise Exception("single file input is currently not supported")
-            elif path.isdir(inputpath):
-                self._timeDirs = []
-                self._rawForces = []
-                self._rawMoments = []
-                # iterate over the time directories, read in the forces and append them
-                for timeDir in glob(path.join(inputpath, "*")):
-                    if isNumber(timeDir.split("/")[-1]):
-                        self._verbosePrint("processing time dir {}".format(timeDir))
-                        self._timeDirs.append(timeDir)
-                        # get the force files
-                        for forcefile in glob(path.join(timeDir, "force*.dat")):
-                            self._verbosePrint("processing: {}".format(forcefile))
-                            self._rawForces.append(self._readForceFile(forcefile))
-                        for momentfile in glob(path.join(timeDir, "moment.dat")):
-                            self._verbosePrint("processing: {}".format(momentfile))
-                            self._rawMoments.append(self._readForceFile(momentfile))
-                # generate a numpy matrix containing all forces
-                self._rawForces = np.concatenate(self._rawForces)
-                self._rawMoments = np.concatenate(self._rawMoments)
-                # sort the matrix by sorting after the first column (time)
-                self._rawForces = self._rawForces[self._rawForces[:,0].argsort()]      # sort by time
-                self._rawMoments = self._rawMoments[self._rawMoments[:,0].argsort()]   # sort by time
+        # all forces should be loaded by now
+        # build a "nice" dict with the forces                    
+        pos = iter(range(1,10))
+        self.forces = dict()
+        self.moments = dict()
 
-            # all forces should be loaded by now
-            # build a "nice" dict with the forces                    
-            pos = iter(range(1,10))
-            self.forces = dict()
-            self.moments = dict()
-            self.moments["time"] = self.forces["time"] = self._rawForces[:,self._TIME]/self.normalTime
-            for forceType in ("total", "pressure", "viscous"):
-                self.forces[forceType] = {}
-                self.moments[forceType] = {}
-                for component in "x", "y", "z":
-                    currentPos = next(pos)
-                    self.forces[forceType][component] = self._rawForces[:,currentPos]/self.normalForce
-                    self.moments[forceType][component] = self._rawMoments[:,currentPos]/self.normalMoment
-            if average:
-                self.calculateAverageStd()
-            if FFT:
-                raise Warning("not implemented yet!")
-            if filterForces:
-                self.filterForcesMoments()
-                self.calculateFilteredAverageStd()
-        else:
-            raise IOError("could not find file: {}".format(inputpath))
+        _rawForces = self._readForceFile(self.force_path)
+        _rawMoments = self._readForceFile(self.moment_path)
+        self.forces["time"] = self.moments["time"] = _rawForces[:,0]
+        for forceType in ("total", "pressure", "viscous"):
+            self.forces[forceType] = {}
+            self.moments[forceType] = {}
+            for component in "x", "y", "z":
+                currentPos = next(pos)
+                self.forces[forceType][component] = _rawForces[:,currentPos]
+                self.moments[forceType][component] = _rawMoments[:,currentPos]               
+    
+        if average:
+            self.calculateAverageStd()
+        if filterForces:
+            self.filterForcesMoments()
+            self.calculateFilteredAverageStd()
 
-    def _readForceFile(self, filepath):
+    # function to process force.dat files
+    def _readForceFile(self, file_name):
         raw = []
 
-        with open(filepath, 'r') as filehandle:
-            for line in filehandle:
+        with open(file_name, 'r') as f:
+            for line in f:
                 tmp = [x.strip('(').strip(')') for x in line.split()]
                 if len(tmp) == 0:
                     continue
                 elif tmp[0] == '#':
                     continue
-                elif len(tmp) != 10:
-                    continue
                 else:
                     try:
                         raw.append([ float(i) for i in tmp ])
-                    except ValueError:
+                    except:
                         print("could not convert string to float in line:")
                         print("\t" + line)
                         print("in file:")
-                        print("\t" + filepath)
+                        print("\t" + file_name)
 
-        filehandle.close()
         raw = np.array(raw)
+
         return raw
 
-    def _getTimeIndex(self, time):
-        index = 0
-        while self.forces["time"][index] < time and index < len(self.forces["time"]):
-            index += 1
-        return index
-
-    def _getIndices(self, startTime = 0, endTime = 0):
-        startIndex = 0
-        endIndex = len(self.forces["time"])
-        if startTime == 0 and endTime == 0:
-            self._verbosePrint("start index {} end index {}".format(startIndex, endIndex))
-        elif startTime > 0 and endTime == 0:
-            startIndex = self._getTimeIndex(startTime)
-            self._verbosePrint("start index {} end index {}".format(startIndex, endIndex))
-        elif startTime == 0 and endTime > 0:
-            endIndex = self._getTimeIndex(endTime)
-            self._verbosePrint("start index {} end index {}".format(startIndex, endIndex))
-        elif startTime > 0 and endTime > 0:
-            startIndex = self._getTimeIndex(startTime)
-            endIndex = self._getTimeIndex(endTime)
-            self._verbosePrint("start index {} end index {}".format(startIndex, endIndex))
+    # Returns an indices mask based based on the number of cycles that want to be plotted
+    def _getIndices(self):
+        cuttoff_time = self.forces['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
+        return np.where(self.forces['time'] >= cuttoff_time, True, False)
+    
+    def _getIndicesByTime(self, dictType, startTime, endTime):
+        if dictType == 'forces':
+            return np.logical_and(self.forces['time'] >= startTime, self.forces['time'] <= endTime)
         else:
-            print("undefined behaviour!")
-            startIndex=0
-            endIndex=0
-        return (startIndex, endIndex)
-
-    def calculateAverageStd(self, startTime = 0, endTime = 0):
+            return np.logical_and(self.moments['time'] >= startTime, self.moments['time'] <= endTime)
+    
+    # calculates the average and standard deviation on unfiltered data
+    def calculateAverageStd(self):
 
         self.averageForces = {}
         self.stdForces = {}
@@ -148,7 +86,7 @@ class Forces:
         self.averageMoments = {}
         self.stdMoments = {}
 
-        startIndex, endIndex = self._getIndices(startTime, endTime)
+        mask = self._getIndices()
 
         for forceType in ("total", "pressure", "viscous"):
             self.averageForces[forceType] = {}
@@ -156,30 +94,21 @@ class Forces:
             self.stdForces[forceType] = {}
             self.stdMoments[forceType] = {}
             for component in ("x", "y", "z"):
-                self.averageForces[forceType][component] = np.average(self.forces[forceType][component][startIndex:endIndex])
-                self.averageMoments[forceType][component] = np.average(self.moments[forceType][component][startIndex:endIndex])
-                self.stdForces[forceType][component] = np.std(self.forces[forceType][component][startIndex:endIndex])
-                self.stdMoments[forceType][component] = np.std(self.moments[forceType][component][startIndex:endIndex])
+                self.averageForces[forceType][component] = np.average(self.forces[forceType][component][mask])
+                self.averageMoments[forceType][component] = np.average(self.moments[forceType][component][mask])
+                self.stdForces[forceType][component] = np.std(self.forces[forceType][component][mask])
+                self.stdMoments[forceType][component] = np.std(self.moments[forceType][component][mask])
 
         return {"forces" : { "average" : self.averageForces, "std" : self.stdForces },
                 "moments" : { "average" : self.averageMoments, "std" : self.stdMoments} }
 
-
-    def _verbosePrint(self, message):
-        if self._verbose == True:
-            print(message)
-
-    def getMaxTime(self):
-        self._verbosePrint("max time is {}".format(self.forces["time"][-1]))
-        return self.forces["time"][-1]
-
-
-    def filterForcesMoments(self, startTime = 0, endTime = 0, filterFunction = "flat", filterWindow = 11):
+    # filters the data
+    def filterForcesMoments(self, filterFunction = "flat", filterWindow = 11):
         if filterWindow % 2 == 0:
             raise Exception("filterWindow needs to be an uneven number!")
 
-        startIndex, endIndex = self._getIndices(startTime, endTime)
-        endTimeIndex = int(len(self.forces["time"]) - ((filterWindow - 1)/2))
+        mask = self._getIndices()
+        endTimeIndex = int(len(self.forces["time"][mask]) - ((filterWindow - 1)/2))
 
         self.filteredForces = {}
         self.filteredMoments = {}
@@ -190,23 +119,24 @@ class Forces:
             self.filteredForces[forceType] = {}
             self.filteredMoments[forceType] = {}
             for component in ("x", "y", "z"):
-                self.filteredForces[forceType][component] = filterData(self.forces[forceType][component][startIndex:endIndex], filterWindow, filterFunction)
-                self.filteredMoments[forceType][component] = filterData(self.moments[forceType][component][startIndex:endIndex], filterWindow, filterFunction)
+                self.filteredForces[forceType][component] = filterData(self.forces[forceType][component][mask],                                                                          filterWindow, filterFunction)
+                
+                self.filteredMoments[forceType][component] = filterData(self.moments[forceType][component][mask],                                                                        filterWindow, filterFunction)
 
         return (self.filteredForces, self.filteredMoments)
 
-    def calculateFilteredAverageStd(self, startTime = 0, endTime = 0):
+    # Calculates the average and standard deviation on filtered data
+    def calculateFilteredAverageStd(self):
 
         if hasattr(self, "filteredForces") == False:
             raise Exception("missing attribute filteredForces. Please run filterForces prior to calculateFilteredAveragesStd!")
-
+        
         self.averageFilteredForces = {}
-        self.averageFilteredMoments = {}
-
         self.stdFilteredForces = {}
+
+        self.averageFilteredMoments = {}
         self.stdFilteredMoments = {}
 
-        startIndex, endIndex = self._getIndices(startTime, endTime)
         for forceType in ("total", "pressure", "viscous"):
             self.averageFilteredForces[forceType] = {}
             self.averageFilteredMoments[forceType] = {}
@@ -214,44 +144,33 @@ class Forces:
             self.stdFilteredMoments[forceType] = {}
             for component in ("x", "y", "z"):
                 # calculate average forces
-                self.averageFilteredForces[forceType][component] = np.average(self.filteredForces[forceType][component][startIndex:endIndex])
-                self.stdFilteredForces[forceType][component] = np.std(self.filteredForces[forceType][component][startIndex:endIndex])
+                self.averageFilteredForces[forceType][component] = np.average(self.filteredForces[forceType][component])
+                self.stdFilteredForces[forceType][component] = np.std(self.filteredForces[forceType][component])
                 # calculate average moments
-                self.averageFilteredMoments[forceType][component] = np.average(self.filteredMoments[forceType][component][startIndex:endIndex])
-                self.stdFilteredMoments[forceType][component] = np.std(self.filteredMoments[forceType][component][startIndex:endIndex])
+                self.averageFilteredMoments[forceType][component] = np.average(self.filteredMoments[forceType][component])
+                self.stdFilteredMoments[forceType][component] = np.std(self.filteredMoments[forceType][component])
 
 
         return { "forces" : { "average" : self.averageFilteredForces, "std" : self.stdFilteredForces},
                  "moments": { "average" : self.averageFilteredMoments, "std" : self.stdFilteredMoments}}
 
+    def convertToCoefficient(self):
+        pass
+
     def getForcesMinTime(self):
-        self._verbosePrint("min time is {}".format(self.forces["time"][0]))
+        print("min time is {}".format(self.forces["time"][0]))
         return self.forces["time"][0]
 
     def getMomentsMinTime(self):
-        self._verbosePrint("min time is {}".format(self.moments["time"][0]))
+        print("min time is {}".format(self.moments["time"][0]))
         return self.moments["time"][0]
 
     ## define a method for getting forces by time
     def getForcesByTime(self,  startTime = 0, endTime = 0, forceType = "total", forceComponent = "x"):
-        startIndex, endIndex = _getIndices(startTime, endTime)
-        return self.forces[forceType][forceComponent][startIndex:endIndex]
+        mask = self._getIndicesByTime('forces', startTime, endTime)
+        return self.forces[forceType][forceComponent][mask]
 
-    ## define a method for getting forces by time
+    ## define a method for getting moments by time
     def getMomentsByTime(self,  startTime = 0, endTime = 0, forceType = "total", forceComponent = "x"):
-        startIndex, endIndex = _getIndices(startTime, endTime)
-        return self.moments[forceType][forceComponent][startIndex:endIndex]
-
-
-    def _verbosePrint(self, message):
-        if self._verbose == True:
-            print(message)
-
-class ForceCoefficients(Forces):
-    def __init__(self, inputpath, rho = 1, velocity = 1, area = 2, average = True, FFT = False, verbose = True):
-
-        self._inputpath = inputpath
-        self._verbose = verbose
-
-        self._forceObject = Forces(inputpath)
-
+        mask = self._getIndicesByTime('moments', startTime, endTime)
+        return self.moments[forceType][forceComponent][mask]
