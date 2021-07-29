@@ -27,7 +27,8 @@ class Forces:
 
         _rawForces = self._readForceFile(self.force_path)
         _rawMoments = self._readForceFile(self.moment_path)
-        self.forces["time"] = self.moments["time"] = _rawForces[:,0]
+        self.forces["time"] = _rawForces[:,0]
+        self.moments["time"] = _rawMoments[:,0]
         for forceType in ("total", "pressure", "viscous"):
             self.forces[forceType] = {}
             self.moments[forceType] = {}
@@ -45,6 +46,7 @@ class Forces:
     # function to process force.dat files
     def _readForceFile(self, file_name):
         raw = []
+        force_len = 10
 
         with open(file_name, 'r') as f:
             for line in f:
@@ -55,7 +57,11 @@ class Forces:
                     continue
                 else:
                     try:
-                        raw.append([ float(i) for i in tmp ])
+                        # check to make sure everything is the same size
+                        # will not write lines where the output is not all the forces
+                        force_tmp = [ float(i) for i in tmp ]
+                        if len(force_tmp) == force_len:
+                            raw.append(force_tmp)
                     except:
                         print("could not convert string to float in line:")
                         print("\t" + line)
@@ -67,10 +73,14 @@ class Forces:
         return raw
 
     # Returns an indices mask based based on the number of cycles that want to be plotted
-    def _getIndices(self):
-        cuttoff_time = self.forces['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
-        return np.where(self.forces['time'] >= cuttoff_time, True, False)
-    
+    def _getIndices(self, dictType):
+        if dictType == 'forces':
+            cuttoff_time = self.forces['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
+            return np.where(self.forces['time'] >= cuttoff_time, True, False)
+        else:
+            cuttoff_time = self.moments['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
+            return np.where(self.moments['time'] >= cuttoff_time, True, False)
+            
     def _getIndicesByTime(self, dictType, startTime, endTime):
         if dictType == 'forces':
             return np.logical_and(self.forces['time'] >= startTime, self.forces['time'] <= endTime)
@@ -86,7 +96,8 @@ class Forces:
         self.averageMoments = {}
         self.stdMoments = {}
 
-        mask = self._getIndices()
+        force_mask = self._getIndices('forces')
+        moment_mask = self._getIndices('moment')
 
         for forceType in ("total", "pressure", "viscous"):
             self.averageForces[forceType] = {}
@@ -94,10 +105,10 @@ class Forces:
             self.stdForces[forceType] = {}
             self.stdMoments[forceType] = {}
             for component in ("x", "y", "z"):
-                self.averageForces[forceType][component] = np.average(self.forces[forceType][component][mask])
-                self.averageMoments[forceType][component] = np.average(self.moments[forceType][component][mask])
-                self.stdForces[forceType][component] = np.std(self.forces[forceType][component][mask])
-                self.stdMoments[forceType][component] = np.std(self.moments[forceType][component][mask])
+                self.averageForces[forceType][component] = np.average(self.forces[forceType][component][force_mask])
+                self.averageMoments[forceType][component] = np.average(self.moments[forceType][component][moment_mask])
+                self.stdForces[forceType][component] = np.std(self.forces[forceType][component][force_mask])
+                self.stdMoments[forceType][component] = np.std(self.moments[forceType][component][moment_mask])
 
         return {"forces" : { "average" : self.averageForces, "std" : self.stdForces },
                 "moments" : { "average" : self.averageMoments, "std" : self.stdMoments} }
@@ -107,21 +118,24 @@ class Forces:
         if filterWindow % 2 == 0:
             raise Exception("filterWindow needs to be an uneven number!")
 
-        mask = self._getIndices()
-        endTimeIndex = int(len(self.forces["time"][mask]) - ((filterWindow - 1)/2))
+        force_mask = self._getIndices('forces')
+        moment_mask = self._getIndices('moments')
+        
+        endTimeIndex_force = int(len(self.forces["time"][force_mask]) - ((filterWindow - 1)/2))
+        endTimeIndex_moment = int(len(self.moments["time"][moment_mask]) - ((filterWindow - 1)/2))
 
         self.filteredForces = {}
         self.filteredMoments = {}
-        self.filteredForces["time"] =  self.forces["time"][int((filterWindow - 1)/2):endTimeIndex]
-        self.filteredMoments["time"] =  self.moments["time"][int((filterWindow - 1)/2):endTimeIndex]
+        self.filteredForces["time"] =  self.forces["time"][int((filterWindow - 1)/2):endTimeIndex_force]
+        self.filteredMoments["time"] =  self.moments["time"][int((filterWindow - 1)/2):endTimeIndex_moment]
 
         for forceType in ("total", "pressure", "viscous"):
             self.filteredForces[forceType] = {}
             self.filteredMoments[forceType] = {}
             for component in ("x", "y", "z"):
-                self.filteredForces[forceType][component] = filterData(self.forces[forceType][component][mask], filterWindow, filterFunction)
+                self.filteredForces[forceType][component] = filterData(self.forces[forceType][component][force_mask], filterWindow, filterFunction)
                 
-                self.filteredMoments[forceType][component] = filterData(self.moments[forceType][component][mask], filterWindow, filterFunction)
+                self.filteredMoments[forceType][component] = filterData(self.moments[forceType][component][moment_mask], filterWindow, filterFunction)
 
         return (self.filteredForces, self.filteredMoments)
 

@@ -22,17 +22,17 @@ class ForceBins:
         # all forces should be loaded by now
         # build a "nice" dict with the forces                    
    
-        self.forces = dict()
-        self.moments = dict()
+        self.forces = {}
+        self.moments = {}
 
         self.forceCoord_x, self.forceCoord_y, self.forceCoord_z, _rawForces = self._readForceBinFile(self.force_path)
         self.momentCoord_x, self.momentCoord_y, self.momentCoord_z, _rawMoments = self._readForceBinFile(self.moment_path)
 
-        self.number_coordinates = len(self.forceCoord_x)
-        pos = iter(range(1,10*self.number_coordinates))
-        
-        self.forces["time"] = self.moments["time"] = _rawForces[:,0]
-        for num in range(self.number_coordinates):
+        pos = iter(range(1,(9*self.bins)+1))
+
+        self.forces["time"] = _rawForces[:,0]
+        self.moments["time"] = _rawMoments[:,0]
+        for num in range(self.bins):
             self.forces[num] = {}
             self.moments[num] = {}
             for forceType in ("total", "pressure", "viscous"):
@@ -54,7 +54,8 @@ class ForceBins:
         x_coords = []
         y_coords = []
         z_coords = []
-
+        force_len = 0
+        
         with open(file_name, 'r') as f:
             for line in f:
                 tmp = [x.strip('(').strip(')') for x in line.split()]
@@ -62,6 +63,10 @@ class ForceBins:
                     continue
                 elif tmp[0] == '#' and len(tmp) == 1:
                     continue
+                elif tmp[0] == '#' and tmp[1] == 'bins':
+                    # this is meant as a check in case the solver fails at any timestep
+                    self.bins = int(tmp[3])
+                    force_len = self.bins * 9 + 1
                 elif tmp[1] == "x":
                     data = tmp[4:]
                     x_coords.append([ float(i) for i in data ])
@@ -75,14 +80,16 @@ class ForceBins:
                     continue
                 else:
                     try:
-                        raw.append([ float(i) for i in tmp ])
+                        force_tmp = [ float(i) for i in tmp ]
+                        if len(force_tmp) == force_len:
+                            raw.append(force_tmp)
                     except:
                         print("could not convert string to float in line:")
                         print("\t" + line)
                         print("in file:")
-                        print("\t" + file_name)
+                        print("\t" + file_name.name)
 
-        raw = np.array(raw)
+        raw = np.array(raw)       
         x_coords = np.array(x_coords)
         y_coords = np.array(y_coords)
         z_coords = np.array(z_coords)
@@ -90,9 +97,13 @@ class ForceBins:
         return x_coords[0], y_coords[0], z_coords[0], raw
 
     # Returns an indices mask based based on the number of cycles that want to be plotted
-    def _getIndices(self):
-        cuttoff_time = self.forces['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
-        return np.where(self.forces['time'] >= cuttoff_time, True, False)
+    def _getIndices(self, dictType):
+        if dictType == 'forces':
+            cuttoff_time = self.forces['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
+            return np.where(self.forces['time'] >= cuttoff_time, True, False)
+        else:
+            cuttoff_time = self.moments['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
+            return np.where(self.moments['time'] >= cuttoff_time, True, False)
     
     def _getIndicesByTime(self, dictType, startTime, endTime):
         if dictType == 'forces':
@@ -109,9 +120,10 @@ class ForceBins:
         self.averageMoments = {}
         self.stdMoments = {}
 
-        mask = self._getIndices()
+        force_mask = self._getIndices('forces')
+        moment_mask = self._getIndices('moments')
 
-        for num in range(self.number_coordinates):
+        for num in range(self.bins):
             self.averageForces[num] = {}
             self.averageMoments[num] = {}
             self.stdForces[num] = {}
@@ -122,10 +134,10 @@ class ForceBins:
                 self.stdForces[num][forceType] = {}
                 self.stdMoments[num][forceType] = {}
                 for component in ("x", "y", "z"):
-                    self.averageForces[num][forceType][component] = np.average(self.forces[num][forceType][component][mask])
-                    self.averageMoments[num][forceType][component] = np.average(self.moments[num][forceType][component][mask])
-                    self.stdForces[num][forceType][component] = np.std(self.forces[num][forceType][component][mask])
-                    self.stdMoments[num][forceType][component] = np.std(self.moments[num][forceType][component][mask])
+                    self.averageForces[num][forceType][component] = np.average(self.forces[num][forceType][component][force_mask])
+                    self.averageMoments[num][forceType][component] = np.average(self.moments[num][forceType][component][moment_mask])
+                    self.stdForces[num][forceType][component] = np.std(self.forces[num][forceType][component][force_mask])
+                    self.stdMoments[num][forceType][component] = np.std(self.moments[num][forceType][component][moment_mask])
 
         return {"forces" : { "average" : self.averageForces, "std" : self.stdForces },
                 "moments" : { "average" : self.averageMoments, "std" : self.stdMoments} }
@@ -135,24 +147,27 @@ class ForceBins:
         if filterWindow % 2 == 0:
             raise Exception("filterWindow needs to be an uneven number!")
 
-        mask = self._getIndices()
-        endTimeIndex = int(len(self.forces["time"][mask]) - ((filterWindow - 1)/2))
+        force_mask = self._getIndices('forces')
+        moment_mask = self._getIndices('moments')
+        
+        endTimeIndex_force = int(len(self.forces["time"][force_mask]) - ((filterWindow - 1)/2))
+        endTimeIndex_moment = int(len(self.moments["time"][moment_mask]) - ((filterWindow - 1)/2))
         
                 
         self.filteredForces = {}
         self.filteredMoments = {}
-        self.filteredForces["time"] =  self.forces["time"][int((filterWindow - 1)/2):endTimeIndex]
-        self.filteredMoments["time"] =  self.moments["time"][int((filterWindow - 1)/2):endTimeIndex]
+        self.filteredForces["time"] =  self.forces["time"][int((filterWindow - 1)/2):endTimeIndex_force]
+        self.filteredMoments["time"] =  self.moments["time"][int((filterWindow - 1)/2):endTimeIndex_moment]
         
-        for num in range(self.number_coordinates):
+        for num in range(self.bins):
             self.filteredForces[num] = {}
             self.filteredMoments[num] = {}
             for forceType in ("total", "pressure", "viscous"):
                 self.filteredForces[num][forceType] = {}
                 self.filteredMoments[num][forceType] = {}
                 for component in ("x", "y", "z"):
-                    self.filteredForces[num][forceType][component] = filterData(self.forces[num][forceType][component][mask], filterWindow, filterFunction)
-                    self.filteredMoments[num][forceType][component] = filterData(self.moments[num][forceType][component][mask], filterWindow, filterFunction)
+                    self.filteredForces[num][forceType][component] = filterData(self.forces[num][forceType][component][force_mask], filterWindow, filterFunction)
+                    self.filteredMoments[num][forceType][component] = filterData(self.moments[num][forceType][component][moment_mask], filterWindow, filterFunction)
 
         return self.filteredForces, self.filteredMoments
 
@@ -168,7 +183,7 @@ class ForceBins:
         self.averageFilteredMoments = {}
         self.stdFilteredMoments = {}
 
-        for num in range(self.number_coordinates):
+        for num in range(self.bins):
             self.averageFilteredForces[num] = {}
             self.stdFilteredForces[num] = {}
             self.averageFilteredMoments[num] = {}
@@ -210,3 +225,25 @@ class ForceBins:
     def getMomentsByTime(self,  startTime = 0, endTime = 0, forceType = "total", forceComponent = "x"):
         mask = self._getIndicesByTime('moments', startTime, endTime)
         return self.moments[forceType][forceComponent][mask]
+
+    def calcPowerCarangiform(self, density, amplitude, omega, waveNumber):
+        if hasattr(self, "filteredForces") == False:
+            raise Exception("missing attribute filteredForces. Please run filterForces prior to calcPowerCarangiform!")
+        
+        self.power = {'time':[], 'calcPower':[]}
+        self.average_power = 0
+
+        tmp_power = np.zeros((len(self.filteredForces['time']), self.bins))
+        self.power['time'] = self.filteredForces['time']
+        
+        for num in range(self.bins):
+            x = self.forceCoord_x[num]
+            h_dot_t = (amplitude[0] + amplitude[1]*x + amplitude[2]*x**2) * omega * np.cos(omega*self.filteredForces['time'] + waveNumber * x)
+            tmp_power[:, num] = (-self.filteredForces[num]['pressure']['y'] / density * h_dot_t ) + (self.filteredForces[num]['viscous']['y'] / density * h_dot_t)
+        
+        for tmp in tmp_power:
+            self.power['calcPower'].append(np.sum(tmp))
+
+        self.average_power = np.mean(self.power['calcPower'])
+
+        return self.power, self.average_power
