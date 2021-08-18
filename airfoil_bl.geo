@@ -131,6 +131,7 @@ Extrude {0, 0, 1} {
  Layers{1};
  Recombine;
 }
+
 // Define the physical surfaces -> values are obtained via the GUI 
 Physical Surface("overset") = {212, 216, 220, 224}; 
 Physical Surface("symFront") = {233}; 
