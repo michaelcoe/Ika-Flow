@@ -1,0 +1,9 @@
+motionSolvers/displacement/fishBody/fishBodyMotionSolver.C
+
+fishBodyFunctions=motionSolvers/displacement/fishBody/fishBodyMotionFunctions
+$(fishBodyFunctions)/fishBodyMotionFunction/fishBodyMotionFunction.C
+$(fishBodyFunctions)/fishBodyMotionFunction/fishBodyMotionFunctionNew.C
+$(fishBodyFunctions)/carangiformMotion/carangiformMotion.C
+$(fishBodyFunctions)/anguilliformMotion/anguilliformMotion.C
+
+LIB = $(FOAM_USER_LIBBIN)/libfishBodyMotion

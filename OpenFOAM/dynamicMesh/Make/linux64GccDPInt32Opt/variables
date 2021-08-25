@@ -1,0 +1,2 @@
+fishBodyFunctions=motionSolvers/displacement/fishBody/fishBodyMotionFunctions
+LIB = $(FOAM_USER_LIBBIN)/libfishBodyMotion
