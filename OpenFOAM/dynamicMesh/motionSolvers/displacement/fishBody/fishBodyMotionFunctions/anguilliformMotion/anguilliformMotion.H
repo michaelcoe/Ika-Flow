@@ -64,7 +64,7 @@ class anguilliformMotion
         point origin_;
 
         //- Amplitude
-        vector amplitude_;
+        scalar amplitude_;
 
         //- wave number growth
         scalar waveNumber_;
@@ -128,9 +128,6 @@ public:
 
     // Member Functions
 
-        //- Return the solid-body motion transformation septernion
-        virtual septernion transformation() const;
-        
         //- Return the transformed pointField
         virtual tmp<vectorField> transformationPoints(pointField& p0_) const;
 

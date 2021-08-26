@@ -159,31 +159,24 @@ Foam::fishBodyMotionSolver::~fishBodyMotionSolver()
 
 Foam::tmp<Foam::pointField> Foam::fishBodyMotionSolver::curPoints() const
 {
-    if (moveAllCells_)
-    {
-        return transformPoints(SBMFPtr_().transformation(), points0_);
-    }
-    else
-    {
-        tmp<pointField> ttransformedPts(new pointField(mesh().points()));
-        pointField& transformedPts = ttransformedPts.ref();
-        pointField p0(points0_, pointIDs_);
+    tmp<pointField> ttransformedPts(new pointField(mesh().points()));
+    pointField& transformedPts = ttransformedPts.ref();
+    pointField p0(points0_, pointIDs_);
 
 
-        UIndirectList<point>(transformedPts, pointIDs_) = SBMFPtr_().transformationPoints
-        (
-            p0
-        );
+    UIndirectList<point>(transformedPts, pointIDs_) = SBMFPtr_().transformationPoints
+    (
+        p0
+    );
 
-        /*
-        UIndirectList<point>(transformedPts, pointIDs_) = transformPoints
-        (
+    /*
+    UIndirectList<point>(transformedPts, pointIDs_) = transformPoints
+    (
             SBMFPtr_().transformation(),
             pointField(points0_, pointIDs_)
-        );
-        */
-        return ttransformedPts;
-    }
+    );
+    */
+    return ttransformedPts;
 }
 
 

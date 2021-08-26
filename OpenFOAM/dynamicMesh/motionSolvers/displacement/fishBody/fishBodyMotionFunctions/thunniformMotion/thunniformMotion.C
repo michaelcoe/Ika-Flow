@@ -26,7 +26,8 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "carangiformMotion.H"
+#include "thunniformMotion.H"
+#include "mathematicalConstants.H"
 #include "addToRunTimeSelectionTable.H"
 #include "unitConversion.H"
 
@@ -36,11 +37,11 @@ namespace Foam
 {
 namespace fishBodyMotionFunctions
 {
-    defineTypeNameAndDebug(carangiformMotion, 0);
+    defineTypeNameAndDebug(thunniformMotion, 0);
     addToRunTimeSelectionTable
     (
         fishBodyMotionFunction,
-        carangiformMotion,
+        thunniformMotion,
         dictionary
     );
 }
@@ -49,8 +50,8 @@ namespace fishBodyMotionFunctions
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::fishBodyMotionFunctions::carangiformMotion::
-carangiformMotion
+Foam::fishBodyMotionFunctions::thunniformMotion::
+thunniformMotion
 (
     const dictionary& SBMFCoeffs,
     const Time& runTime
@@ -63,12 +64,11 @@ carangiformMotion
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
-
 Foam::tmp<Foam::pointField>
-Foam::fishBodyMotionFunctions::carangiformMotion::
+Foam::fishBodyMotionFunctions::thunniformMotion::
 transformationPoints(pointField& p0) const
 {
-    scalar tm = time_.value();
+    const scalar tm = time_.value();
 
     forAll(p0, pointI)
     {
@@ -76,12 +76,28 @@ transformationPoints(pointField& p0) const
         const scalar y = p0[pointI].component(1)-origin_[1];
         const scalar z = p0[pointI].component(2)-origin_[2];
 
-        // new value by equation
-        const scalar localAmplitude = amplitude_ * (1 + (coefficients_[0] * (x-1)) + (coefficients_[1] * (x*x-1)));
-        const scalar dampFactor = 0.5-0.5*tanh(ramp_*x-(ramp_+9));
-                    
-        const scalar yr = y + localAmplitude * dampFactor * sin(waveNumber_*x - omega_*tm) * length_;
-        
+        scalar yr = 0;
+
+        if (x >= pivot_)
+        {
+            // new value by equation
+            const scalar xPivot = x - pivot_;
+
+            const scalar localAmplitude = amplitude_ * (1 + (coefficients_[0]*(pivot_-1)) + (coefficients_[1]*(pivot_*pivot_-1)));
+            const scalar yEnd = localAmplitude * sin(waveNumber_*pivot_ - omega_*tm) * length_;
+            
+            const scalar thetaT = maxAngle_ * sin(waveNumber_*pivot_ - omega_*tm + phase_);
+
+            yr = y + yEnd + xPivot * tan(thetaT) * length_;
+
+        }
+        else
+        {
+            // new value by equation
+            const scalar localAmplitude = amplitude_ * (1 + (coefficients_[0]*(x-1)) + (coefficients_[1]*(x*x-1)));
+            yr = y + localAmplitude * sin(waveNumber_*x - omega_*tm) * length_;
+        }
+
         p0[pointI] = vector(x, yr, z);
     }
 
@@ -89,7 +105,7 @@ transformationPoints(pointField& p0) const
 }
 
 
-bool Foam::fishBodyMotionFunctions::carangiformMotion::read
+bool Foam::fishBodyMotionFunctions::thunniformMotion::read
 (
     const dictionary& SBMFCoeffs
 )
@@ -103,6 +119,9 @@ bool Foam::fishBodyMotionFunctions::carangiformMotion::read
     SBMFCoeffs_.readEntry("length", length_);
     SBMFCoeffs_.readEntry("ramp", ramp_);
     SBMFCoeffs_.readEntry("omega", omega_);
+    SBMFCoeffs_.readEntry("pivot", pivot_);
+    SBMFCoeffs_.readEntry("maxAngle", maxAngle_);
+    SBMFCoeffs_.readEntry("phaseAngle", phase_);
 
     return true;
 }

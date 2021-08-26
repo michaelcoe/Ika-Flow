@@ -64,25 +64,6 @@ anguilliformMotion
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-Foam::septernion
-Foam::fishBodyMotionFunctions::anguilliformMotion::
-transformation() const
-{
-    scalar t = time_.value();
-
-    vector eulerAngles = amplitude_*sin(omega_*t);
-
-    // Convert the rotational motion from deg to rad
-    eulerAngles *= degToRad();
-
-    quaternion R(quaternion::XYZ, eulerAngles);
-    septernion TR(septernion(-origin_)*R*septernion(origin_));
-
-    DebugInFunction << "Time = " << t << " transformation: " << TR << endl;
-
-    return TR;
-}
-
 Foam::tmp<Foam::pointField>
 Foam::fishBodyMotionFunctions::anguilliformMotion::
 transformationPoints(pointField& p0) const
@@ -96,10 +77,10 @@ transformationPoints(pointField& p0) const
         const scalar z = p0[pointI].component(2)-origin_[2];
 
         // new value by equation
-        const scalar localAmplitude = amplitude_[0]*exp(alpha_*(x - 1));
+        const scalar localAmplitude = amplitude_*exp(alpha_*(x - 1));
         const scalar dampFactor = 0.5-0.5*tanh(ramp_*x-(ramp_+9));
                     
-        const scalar yr = y + localAmplitude * dampFactor * sin((waveNumber_ * x) - (omega_ * tm)) * length_;
+        const scalar yr = y + localAmplitude * dampFactor * sin(waveNumber_ * x - omega_ * tm) * length_;
         
         p0[pointI] = vector(x, yr, z);
     }

@@ -130,9 +130,6 @@ public:
 
     // Member Functions
 
-        //- Return the solid-body motion transformation septernion
-        virtual septernion transformation() const = 0;
-
         //- Return the transformed pointField
         virtual tmp<vectorField> transformationPoints(pointField& p0_) const = 0;
 

@@ -25,18 +25,18 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::fishBodyMotionFunctions::carangiformMotion
+    Foam::fishBodyMotionFunctions::thunniformMotion
 
 Description
     SolidBodyMotionFvMesh 6DoF motion function. Oscillating rotation.
 
 SourceFiles
-    carangiformMotion.C
+    thunniformMotion.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef carangiformMotion_H
-#define carangiformMotion_H
+#ifndef thunniformMotion_H
+#define thunniformMotion_H
 
 #include "fishBodyMotionFunction.H"
 #include "primitiveFields.H"
@@ -51,10 +51,10 @@ namespace fishBodyMotionFunctions
 {
 
 /*---------------------------------------------------------------------------*\
-                          Class carangiformMotion Declaration
+                          Class thunniformMotion Declaration
 \*---------------------------------------------------------------------------*/
 
-class carangiformMotion
+class thunniformMotion
 :
     public fishBodyMotionFunction
 {
@@ -81,28 +81,37 @@ class carangiformMotion
         //- Radial velocity
         scalar omega_;
 
+         //- Pivot point
+        scalar pivot_;
+
+        //- Max Angle
+        scalar maxAngle_;
+
+        //- Phase angle
+        scalar phase_;
+        
         //- Define a pointField
         pointField p0_;
 
     // Private Member Functions
 
         //- No copy construct
-        carangiformMotion(const carangiformMotion&) = delete;
+        thunniformMotion(const thunniformMotion&) = delete;
 
         //- No copy assignment
-        void operator=(const carangiformMotion&) = delete;
+        void operator=(const thunniformMotion&) = delete;
 
 
 public:
 
     //- Runtime type information
-    TypeName("carangiformMotion");
+    TypeName("thunniformMotion");
 
 
     // Constructors
 
         //- Construct from components
-        carangiformMotion
+        thunniformMotion
         (
             const dictionary& SBMFCoeffs,
             const Time& runTime
@@ -113,7 +122,7 @@ public:
         {
             return autoPtr<fishBodyMotionFunction>
             (
-                new carangiformMotion
+                new thunniformMotion
                 (
                     SBMFCoeffs_,
                     time_
@@ -123,11 +132,11 @@ public:
 
 
     //- Destructor
-    virtual ~carangiformMotion() = default;
+    virtual ~thunniformMotion() = default;
 
 
     // Member Functions
-     
+       
         //- Return the transformed pointField
         virtual tmp<vectorField> transformationPoints(pointField& p0_) const;
 

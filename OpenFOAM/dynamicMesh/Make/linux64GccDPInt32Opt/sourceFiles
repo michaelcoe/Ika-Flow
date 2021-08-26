@@ -1,8 +1,0 @@
-SOURCE = \
-motionSolvers/displacement/fishBody/fishBodyMotionSolver.C \
-$(fishBodyFunctions)/fishBodyMotionFunction/fishBodyMotionFunction.C \
-$(fishBodyFunctions)/fishBodyMotionFunction/fishBodyMotionFunctionNew.C \
-$(fishBodyFunctions)/carangiformMotion/carangiformMotion.C \
-$(fishBodyFunctions)/anguilliformMotion/anguilliformMotion.C \
-
-# sources

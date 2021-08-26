@@ -25,18 +25,18 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::fishBodyMotionFunctions::carangiformMotion
+    Foam::fishBodyMotionFunctions::gymnotiformMotion
 
 Description
     SolidBodyMotionFvMesh 6DoF motion function. Oscillating rotation.
 
 SourceFiles
-    carangiformMotion.C
+    gymnotiformMotion.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef carangiformMotion_H
-#define carangiformMotion_H
+#ifndef gymnotiformMotion_H
+#define gymnotiformMotion_H
 
 #include "fishBodyMotionFunction.H"
 #include "primitiveFields.H"
@@ -51,10 +51,10 @@ namespace fishBodyMotionFunctions
 {
 
 /*---------------------------------------------------------------------------*\
-                          Class carangiformMotion Declaration
+                          Class gymnotiformMotion Declaration
 \*---------------------------------------------------------------------------*/
 
-class carangiformMotion
+class gymnotiformMotion
 :
     public fishBodyMotionFunction
 {
@@ -65,9 +65,6 @@ class carangiformMotion
 
         //- Amplitude
         scalar amplitude_;
-
-        //- Coefficients
-        vector coefficients_;
 
         //- Wave number
         scalar waveNumber_;
@@ -81,28 +78,31 @@ class carangiformMotion
         //- Radial velocity
         scalar omega_;
 
+        //- Max Angle
+        scalar maxAngle_;
+
         //- Define a pointField
         pointField p0_;
 
     // Private Member Functions
 
         //- No copy construct
-        carangiformMotion(const carangiformMotion&) = delete;
+        gymnotiformMotion(const gymnotiformMotion&) = delete;
 
         //- No copy assignment
-        void operator=(const carangiformMotion&) = delete;
+        void operator=(const gymnotiformMotion&) = delete;
 
 
 public:
 
     //- Runtime type information
-    TypeName("carangiformMotion");
+    TypeName("gymnotiformMotion");
 
 
     // Constructors
 
         //- Construct from components
-        carangiformMotion
+        gymnotiformMotion
         (
             const dictionary& SBMFCoeffs,
             const Time& runTime
@@ -113,7 +113,7 @@ public:
         {
             return autoPtr<fishBodyMotionFunction>
             (
-                new carangiformMotion
+                new gymnotiformMotion
                 (
                     SBMFCoeffs_,
                     time_
@@ -123,11 +123,11 @@ public:
 
 
     //- Destructor
-    virtual ~carangiformMotion() = default;
+    virtual ~gymnotiformMotion() = default;
 
 
     // Member Functions
-     
+
         //- Return the transformed pointField
         virtual tmp<vectorField> transformationPoints(pointField& p0_) const;
 

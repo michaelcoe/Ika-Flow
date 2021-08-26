@@ -26,7 +26,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "carangiformMotion.H"
+#include "gymnotiformMotion.H"
 #include "addToRunTimeSelectionTable.H"
 #include "unitConversion.H"
 
@@ -36,11 +36,11 @@ namespace Foam
 {
 namespace fishBodyMotionFunctions
 {
-    defineTypeNameAndDebug(carangiformMotion, 0);
+    defineTypeNameAndDebug(gymnotiformMotion, 0);
     addToRunTimeSelectionTable
     (
         fishBodyMotionFunction,
-        carangiformMotion,
+        gymnotiformMotion,
         dictionary
     );
 }
@@ -49,8 +49,8 @@ namespace fishBodyMotionFunctions
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::fishBodyMotionFunctions::carangiformMotion::
-carangiformMotion
+Foam::fishBodyMotionFunctions::gymnotiformMotion::
+gymnotiformMotion
 (
     const dictionary& SBMFCoeffs,
     const Time& runTime
@@ -63,9 +63,8 @@ carangiformMotion
 
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
-
 Foam::tmp<Foam::pointField>
-Foam::fishBodyMotionFunctions::carangiformMotion::
+Foam::fishBodyMotionFunctions::gymnotiformMotion::
 transformationPoints(pointField& p0) const
 {
     scalar tm = time_.value();
@@ -75,12 +74,8 @@ transformationPoints(pointField& p0) const
     	const scalar x = (p0[pointI].component(0)-origin_[0])/length_;
         const scalar y = p0[pointI].component(1)-origin_[1];
         const scalar z = p0[pointI].component(2)-origin_[2];
-
-        // new value by equation
-        const scalar localAmplitude = amplitude_ * (1 + (coefficients_[0] * (x-1)) + (coefficients_[1] * (x*x-1)));
-        const scalar dampFactor = 0.5-0.5*tanh(ramp_*x-(ramp_+9));
-                    
-        const scalar yr = y + localAmplitude * dampFactor * sin(waveNumber_*x - omega_*tm) * length_;
+                   
+        const scalar yr = y + amplitude_ * maxAngle_ * sin(waveNumber_ * x - omega_ * tm) * length_;
         
         p0[pointI] = vector(x, yr, z);
     }
@@ -89,7 +84,7 @@ transformationPoints(pointField& p0) const
 }
 
 
-bool Foam::fishBodyMotionFunctions::carangiformMotion::read
+bool Foam::fishBodyMotionFunctions::gymnotiformMotion::read
 (
     const dictionary& SBMFCoeffs
 )
@@ -98,11 +93,11 @@ bool Foam::fishBodyMotionFunctions::carangiformMotion::read
 
     SBMFCoeffs_.readEntry("origin", origin_);
     SBMFCoeffs_.readEntry("amplitude", amplitude_);
-    SBMFCoeffs_.readEntry("coefficients", coefficients_);
     SBMFCoeffs_.readEntry("waveNumber", waveNumber_);
     SBMFCoeffs_.readEntry("length", length_);
     SBMFCoeffs_.readEntry("ramp", ramp_);
     SBMFCoeffs_.readEntry("omega", omega_);
+    SBMFCoeffs_.readEntry("maxAngle", maxAngle_);
 
     return true;
 }
