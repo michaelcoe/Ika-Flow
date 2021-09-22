@@ -1,12 +1,6 @@
-import os
-import sys
-import re
 import numpy as np
-import pandas as pd
 
-from pathlib import Path
-
-### simple fliter function
+### simple high pass fliter function
 def filterData(x, kernelLength = 11, kernelFunction = 'flat'):
 
     if len(x) < kernelLength:
@@ -15,12 +9,18 @@ def filterData(x, kernelLength = 11, kernelFunction = 'flat'):
     if not kernelFunction in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
         raise ValueError("kernel function available are: 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
     
-    # x = np.r_[x[kernelLength-1:0:-1], x, x[-2:-kernelLength-1:-1]]
+    n = np.arange(kernelLength)
+    h = np.sinc(2 * 0.1 * (n - (kernelLength - 1) / 2))
     
     # flat corresponds to a moving average filter
     if kernelFunction == "flat":
-        kernel = np.ones(kernelLength, 'd')
+        kernel = np.ones(kernelLength)
     else:
-        kernel = eval('np.' + kernelFunction + '(kernelLength)')
+        kernel = eval('np.' + kernelFunction + '(' + str(kernelLength) + ')')
+
+    h = h * kernel
+    h = h / np.sum(h)
+    h = -h
+    h[(kernelLength - 1) // 2] += 1
     
-    return np.convolve(kernel / kernel.sum(), x, mode='valid')
+    return np.convolve(x, h, mode='valid')

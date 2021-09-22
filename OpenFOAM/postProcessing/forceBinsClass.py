@@ -8,9 +8,11 @@ class ForceBins:
     def __init__(self,
                  inputpath,
                  cycles = 3.0,
-                 total_cycles = 3.0,
+                 total_cycles = 4.0,
                  average = True,
-                 filterForces = True):
+                 filterForces = True,
+                 filterType = 'flat',
+                 filterWindow = 11):
 
         self.force_path = Path(inputpath).parent.joinpath('forceBin.dat')
         self.moment_path = Path(inputpath).parent.joinpath('momentBin.dat')
@@ -45,7 +47,7 @@ class ForceBins:
         if average:
             self.calculateAverageStd()
         if filterForces:
-            self.filterForcesMoments()
+            self.filterForcesMoments(filterType, filterWindow)
             self.calculateFilteredAverageStd()
 
     # function to process force.dat files
@@ -143,7 +145,7 @@ class ForceBins:
                 "moments" : { "average" : self.averageMoments, "std" : self.stdMoments} }
 
     # filters the data
-    def filterForcesMoments(self, filterFunction = "flat", filterWindow = 11):
+    def filterForcesMoments(self, filterFunction = "hanning", filterWindow = 21):
         if filterWindow % 2 == 0:
             raise Exception("filterWindow needs to be an uneven number!")
 
@@ -238,8 +240,8 @@ class ForceBins:
         
         for num in range(self.bins):
             x = self.forceCoord_x[num]
-            h_dot_t = (amplitude[0] + amplitude[1]*x + amplitude[2]*x**2) * omega * np.cos(omega*self.filteredForces['time'] + waveNumber * x)
-            tmp_power[:, num] = (-self.filteredForces[num]['pressure']['y'] / density * h_dot_t ) + (self.filteredForces[num]['viscous']['y'] / density * h_dot_t)
+            h_dot = amplitude[0]*(1 + amplitude[1]*(x - 1) + amplitude[2]*(x**2 - 1)) * omega * np.cos(waveNumber * x - omega*self.filteredForces['time'])
+            tmp_power[:, num] = (-(self.filteredForces[num]['pressure']['y'] / density) * h_dot ) + ((self.filteredForces[num]['viscous']['y'] / density) * h_dot)
         
         for tmp in tmp_power:
             self.power['calcPower'].append(np.sum(tmp))

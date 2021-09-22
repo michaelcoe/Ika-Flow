@@ -8,9 +8,11 @@ class Forces:
     def __init__(self,
                  inputpath,
                  cycles = 3.0,
-                 total_cycles = 3.0,
+                 total_cycles = 4.0,
                  average = True,
-                 filterForces = True):
+                 filterForces = True,                 
+                 filterType = 'flat',
+                 filterWindow = 11):
 
         self.force_path = Path(inputpath).parent.joinpath('force.dat')
         self.moment_path = Path(inputpath).parent.joinpath('moment.dat')
@@ -40,7 +42,7 @@ class Forces:
         if average:
             self.calculateAverageStd()
         if filterForces:
-            self.filterForcesMoments()
+            self.filterForcesMoments(filterType, filterWindow)
             self.calculateFilteredAverageStd()
 
     # function to process force.dat files
@@ -114,7 +116,7 @@ class Forces:
                 "moments" : { "average" : self.averageMoments, "std" : self.stdMoments} }
 
     # filters the data
-    def filterForcesMoments(self, filterFunction = "flat", filterWindow = 11):
+    def filterForcesMoments(self, filterFunction = "hanning", filterWindow = 11):
         if filterWindow % 2 == 0:
             raise Exception("filterWindow needs to be an uneven number!")
 
