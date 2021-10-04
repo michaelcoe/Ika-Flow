@@ -136,7 +136,6 @@ class Forces:
             self.filteredMoments[forceType] = {}
             for component in ("x", "y", "z"):
                 self.filteredForces[forceType][component] = filterData(self.forces[forceType][component][force_mask], filterWindow, filterFunction)
-                
                 self.filteredMoments[forceType][component] = filterData(self.moments[forceType][component][moment_mask], filterWindow, filterFunction)
 
         return (self.filteredForces, self.filteredMoments)
