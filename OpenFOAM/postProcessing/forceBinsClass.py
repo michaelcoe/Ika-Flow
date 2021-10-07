@@ -240,8 +240,8 @@ class ForceBins:
         
         for num in range(self.bins):
             x = self.forceCoord_x[num]
-            h_dot = amplitude[0]*(1 + amplitude[1]*(x - 1) + amplitude[2]*(x**2 - 1)) * omega * np.cos(waveNumber * x - omega*self.filteredForces['time'])
-            tmp_power[:, num] = (-(self.filteredForces[num]['pressure']['y'] / density) * h_dot ) + ((self.filteredForces[num]['viscous']['y'] / density) * h_dot)
+            h_dot = -amplitude[0]*(1 + amplitude[1]*(x - 1) + amplitude[2]*(x**2 - 1)) * omega * np.cos(waveNumber * x - omega*self.filteredForces['time'])
+            tmp_power[:, num] = ((self.filteredForces[num]['pressure']['y'] / density) * h_dot ) + ((self.filteredForces[num]['viscous']['y'] / density) * h_dot)
         
         for tmp in tmp_power:
             self.power['calcPower'].append(np.sum(tmp))
