@@ -18,6 +18,7 @@ class Forces:
         self.moment_path = Path(inputpath).parent.joinpath('moment.dat')
         self.specific_case = self.force_path.parts[-6]
         self.parent_case = self.force_path.parts[-7]
+        self.st = float(self.specific_case[2:].replace("_", "."))
         self.cycles = cycles
         self.total_cycles = total_cycles
 
