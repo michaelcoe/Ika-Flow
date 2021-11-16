@@ -128,7 +128,7 @@ def naca4(x, t, m, p, a4, c):
        
     return np.asarray([xu, xl]), np.asarray([yu, yl])
     
-def naca4_modified(x, t, m, d0, c):
+def naca4_modified(x, t, p, d0, c):
     """
     Computes the x and y coordinates of a modified naca4 airfoil.
     
@@ -151,10 +151,10 @@ def naca4_modified(x, t, m, d0, c):
         x and y-coordinates for upper and bottom part of airfoil. The format supports
         the contour functions.
     """
-    a, d = naca4Coefficients(t, m, d0, c) # solve for a and d coefficients
+    a, d = naca4Coefficients(t, p, d0, c) # solve for a and d coefficients
 
-    xLead = x[x<=m] # x values for leading edge
-    xTrail = x[x>m] # x values for trialing edge
+    xLead = x[x<=p] # x values for leading edge
+    xTrail = x[x>p] # x values for trialing edge
     # calculate the thickness
     yLead = a[0]*np.sqrt(xLead/c) + a[1]*(xLead/c) + a[2]*np.power(xLead/c, 2) + a[3]*np.power(xLead/c, 3)
     yTrail = d[0] + d[1]*(1-(xTrail/c)) + d[2]*np.power(1-(xTrail/c), 2) + d[3]*np.power(1-(xTrail/c), 3)
@@ -164,7 +164,7 @@ def naca4_modified(x, t, m, d0, c):
     
     return np.asarray([X, X]), np.asarray([Y, -Y])
 
-def naca4Coefficients(t, m, d0, c):
+def naca4Coefficients(t, p, d0, c):
     """
     Computes the x and y coordinates of a modified naca4 airfoil.
     
@@ -183,7 +183,7 @@ def naca4Coefficients(t, m, d0, c):
         a is coefficients for leading edge of airfoil and d is coefficients of
         trailing edge of airfoil.
     """
-    m = m/c
+    m = p/c
     LEindex = 6
     # Trailing edge angle needed to calculate d1
     TREA = np.poly1d([15.83333333, -2.17857143, -0.24047619, 1.009])
