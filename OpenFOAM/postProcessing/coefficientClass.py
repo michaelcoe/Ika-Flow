@@ -3,7 +3,7 @@ import numpy as np
 from pathlib import Path
 from dataUtilities import filterData
 
-class ForceCoefficients:
+class Coefficients:
 
     def __init__(self,
                  inputpath,

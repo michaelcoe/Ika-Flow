@@ -11,14 +11,13 @@ class Forces:
                  total_cycles = 4.0,
                  average = True,
                  filterForces = True,                 
-                 filterType = 'flat',
-                 filterWindow = 11):
+                 filterType = 'hanning',
+                 filterWindow = 51):
 
         self.force_path = Path(inputpath).parent.joinpath('force.dat')
         self.moment_path = Path(inputpath).parent.joinpath('moment.dat')
         self.specific_case = self.force_path.parts[-6]
         self.parent_case = self.force_path.parts[-7]
-        self.st = float(self.specific_case[2:].replace("_", "."))
         self.cycles = cycles
         self.total_cycles = total_cycles
 
@@ -78,6 +77,8 @@ class Forces:
     # Returns an indices mask based based on the number of cycles that want to be plotted
     def _getIndices(self, dictType):
         if dictType == 'forces':
+            if self.cycles < 1:
+                self.cycles = 1
             cuttoff_time = self.forces['time'][-1] * ((self.total_cycles-self.cycles)/self.total_cycles)
             return np.where(self.forces['time'] >= cuttoff_time, True, False)
         else:
@@ -117,7 +118,7 @@ class Forces:
                 "moments" : { "average" : self.averageMoments, "std" : self.stdMoments} }
 
     # filters the data
-    def filterForcesMoments(self, filterFunction = "hanning", filterWindow = 11):
+    def filterForcesMoments(self, filterFunction = "hanning", filterWindow = 51):
         if filterWindow % 2 == 0:
             raise Exception("filterWindow needs to be an uneven number!")
 
@@ -170,8 +171,15 @@ class Forces:
         return { "forces" : { "average" : self.averageFilteredForces, "std" : self.stdFilteredForces},
                  "moments": { "average" : self.averageFilteredMoments, "std" : self.stdFilteredMoments}}
 
-    def convertToCoefficient(self):
-        pass
+    def toCoefficients(self, density, U, A):
+        if hasattr(self, "filteredForces") == False:
+            raise Exception("missing attribute filteredForces. Please run filterForces prior to calculateFilteredAveragesStd!")
+        
+        self.Cdp = self.filteredForces['pressure']['x']/(0.5*density*U**2*A)
+        self.Cdf = self.filteredForces['viscous']['x']/(0.5*density*U**2*A)
+        self.Cd = self.filteredForces['total']['x']/(0.5*density*U**2*A)
+
+        self.Cl = self.filteredForces['total']['y']/(0.5*density*U**2*A)
 
     def getForcesMinTime(self):
         print("min time is {}".format(self.forces["time"][0]))
