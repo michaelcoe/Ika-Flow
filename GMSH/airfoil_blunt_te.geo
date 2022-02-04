@@ -3,10 +3,10 @@ extrude_length =  1.000000;
 domain_cl = 0.100000;
 back_plane = -0.100000;
 
-Lx_plus = 1.250000;
-Lx_minus = -0.250000;
-Ly_plus = 0.250000;
-Ly_minus = -0.250000;
+Lx_plus = 1.50000;
+Lx_minus = -0.50000;
+Ly_plus = 0.50000;
+Ly_minus = -0.50000;
 
 Point(1) = {0.000000, 0.000000, back_plane};
 Point(2) = {0.000062, 0.001403, back_plane};
@@ -455,8 +455,8 @@ Field[1] = BoundaryLayer;
 Field[1].EdgesList = {5, 6}; 
 Field[1].NodesList = {1, 1021, 1022, 397}; 
 Field[1].hfar = 0.00151; 
-Field[1].hwall_n = 6.49e-05; 
-Field[1].thickness = 0.0118; 
+Field[1].hwall_n = 3.75e-05; 
+Field[1].thickness = 1.62e-02; 
 Field[1].ratio = 1.12; 
 Field[1].AnisoMax = 10; 
 Field[1].Quads = 1; 
