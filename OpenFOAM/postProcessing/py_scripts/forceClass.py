@@ -1,7 +1,6 @@
 import numpy as np
 
 from pathlib import Path
-from dataUtilities import filterData
 
 class Forces:
 
@@ -14,10 +13,9 @@ class Forces:
                  filterType = 'hanning',
                  filterWindow = 51):
 
-        self.force_path = Path(inputpath).parent.joinpath('force.dat')
-        self.moment_path = Path(inputpath).parent.joinpath('moment.dat')
+        self.force_path = inputpath
+        self.moment_path = Path(inputpath.parent).joinpath(str(inputpath.name).replace('force', 'moment'))
         self.specific_case = self.force_path.parts[-6]
-        self.parent_case = self.force_path.parts[-7]
         self.cycles = cycles
         self.total_cycles = total_cycles
 
@@ -198,3 +196,22 @@ class Forces:
     def getMomentsByTime(self,  startTime = 0, endTime = 0, forceType = "total", forceComponent = "x"):
         mask = self._getIndicesByTime('moments', startTime, endTime)
         return self.moments[forceType][forceComponent][mask]
+
+    ## simple high pass fliter function
+    def filterData(x, kernelLength = 11, kernelFunction = 'flat'):
+
+        if len(x) < kernelLength:
+            raise ValueError("kernel length > data")
+        
+        if not kernelFunction in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+            raise ValueError("kernel function available are: 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'")
+            
+        # flat corresponds to a moving average filter
+        if kernelFunction == "flat":
+            kernel = np.ones(kernelLength)
+        else:
+            kernel = eval('np.' + kernelFunction + '(' + str(kernelLength) + ')')
+            
+            kernel /= np.sum(kernel)
+        
+        return np.convolve(x, kernel, mode='valid')
