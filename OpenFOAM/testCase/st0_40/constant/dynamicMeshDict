@@ -1,0 +1,43 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  7                                     |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      dynamicMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dynamicFvMesh       dynamicOversetFvMesh;
+
+dynamicOversetFvMeshCoeffs
+{
+//    layerRelax 0.3;
+}
+
+solver          fishBody;
+
+fishBodyCoeffs
+{
+    cellZone    movingZone;
+
+    fishBodyMotionFunction carangiformMotion;
+    carangiformMotionCoeffs{
+        origin          (0.0 0.0 0.0);
+        amplitude       0.1;
+        coefficients    (-0.825 1.625 0);
+        waveNumber      6.28;
+        length          1.0;
+        ramp            10;
+        omega           12.566;
+        delay           5;
+    }
+}
+
+// ************************************************************************* //

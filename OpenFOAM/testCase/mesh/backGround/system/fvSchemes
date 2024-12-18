@@ -1,0 +1,83 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  7                                     |
+|   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSchemes;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+ddtSchemes
+{
+    default         Euler;
+}
+
+gradSchemes
+{
+    default 	     cellLimited Gauss linear 1;
+}
+
+divSchemes
+{
+    default         none;
+
+    div(phi,U)      	Gauss linearUpwindV default;
+
+    div(phi,omega) 		Gauss linearUpwind default;
+    div(phi,epsilon) 	Gauss linearUpwind default;
+    div(phi,k) 			Gauss linearUpwind default;
+
+    div((nuEff*dev2(T(grad(U))))) Gauss linear;
+}
+
+laplacianSchemes
+{
+    default         Gauss linear limited 1;
+}
+
+interpolationSchemes
+{
+    default         linear;
+}
+
+snGradSchemes
+{
+    default         limited 1;
+}
+
+oversetInterpolation
+{
+    //method	      cellVolumeWeight;
+    method          inverseDistance;
+    //method          leastSquares;
+}
+
+wallDist
+{
+    method Poisson;
+}
+
+oversetInterpolationRequired
+{
+//Fields to be interpolated explicitly
+    omega;
+    k;
+    nut;
+}
+/*
+fluxRequired
+{
+    default         no;
+    pcorr           ;
+    p               ;
+}
+*/
+
+// ************************************************************************* //

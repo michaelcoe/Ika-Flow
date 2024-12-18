@@ -1,0 +1,23 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2012                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+// Define Boundary Conditions
+flowVelocity         (1.0 0 0);
+pressure             0;
+turbulentKE          3.75e-03;
+turbulentOmega       8.75e-01;
+turbulentEpsilon     2.95e-04;
+turbulentNut         4.29e-03;
+turbulentNuTilda     1.00e-05;
+
+// Define Model Parameters
+kinViscosity         2.5e-06;
+flowModel            kOmegaSST;
+
+
+// ************************************************************************* //
